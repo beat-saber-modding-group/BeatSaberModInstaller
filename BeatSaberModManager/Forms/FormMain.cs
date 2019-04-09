@@ -45,6 +45,14 @@ namespace BeatSaberModManager
             
             // Show tooltips
             listViewMods.ShowItemToolTips = true;
+            var modList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(System.IO.File.ReadAllText(System.IO.Path.Combine(Environment.CurrentDirectory, "mods.json")));
+            foreach( var mod in modList)
+            {
+                if (!defaultMods.Contains(mod))
+                {
+                    defaultMods.Add(mod.ToLower());
+                }
+            }
         }
         #endregion
 
@@ -453,6 +461,20 @@ namespace BeatSaberModManager
                 return;
             }
             buttonInstall.Enabled = false;
+            try
+            {
+                var modList = new List<string>();
+                foreach (ListViewItem item in listViewMods.Items)
+                {
+                    if (item.Checked)
+                        modList.Add(item.Text);
+                }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(Environment.CurrentDirectory, "mods.json"), Newtonsoft.Json.JsonConvert.SerializeObject(modList));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to save modlist backup, Will not load mods on next startup{Environment.NewLine}{ex}");
+            }
             new Thread(() => { installer.Run(); }).Start();
         }
 
