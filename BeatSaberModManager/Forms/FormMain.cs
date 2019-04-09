@@ -467,7 +467,9 @@ namespace BeatSaberModManager
                 foreach (ListViewItem item in listViewMods.Items)
                 {
                     if (item.Checked)
+                    {
                         modList.Add(item.Text);
+                    }
                 }
                 System.IO.File.WriteAllText(System.IO.Path.Combine(Environment.CurrentDirectory, "mods.json"), Newtonsoft.Json.JsonConvert.SerializeObject(modList));
             }
