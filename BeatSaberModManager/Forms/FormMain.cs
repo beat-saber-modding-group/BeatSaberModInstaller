@@ -25,6 +25,7 @@ namespace BeatSaberModManager
         InstallerLogic installer;
         MaterialSkinManager skinManager;
         bool finishedLoading = false;
+        bool programmaticCheck = false;
         bool darkTheme = false;
         int activeThemeID = 0;
         List<string> defaultMods = new List<string>(new string[] { "songloader", "scoresaber", "beatsaverdownloader" });
@@ -238,7 +239,7 @@ namespace BeatSaberModManager
         {
             string name = release.name.ToLower();
             string category = release.category.ToLower();
-            if (name.Equals("bsipa") || category.Contains("libraries"))
+            if (name.Equals("bsipa"))
             {
                 item.Text = $"[REQUIRED] {release.title}";
                 item.BackColor = darkTheme ? Color.FromArgb(255, 30, 30, 30) : Color.LightGray;
@@ -324,15 +325,16 @@ namespace BeatSaberModManager
 
         private void listViewMods_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
+            if (!finishedLoading || programmaticCheck)
+            {
+                return;
+            }
+
             ReleaseInfo release = (ReleaseInfo)e.Item.Tag;
             if (release.disabled)
             {
                 e.Item.Checked = release.install;
                 return;
-            }
-            else
-            {
-                release.install = e.Item.Checked;
             }
 
             if (e.Item.Checked)
@@ -351,10 +353,7 @@ namespace BeatSaberModManager
                         }
                     }
                 }
-            }
 
-            if (e.Item.Checked)
-            {
                 if (release.conflictsWith.Count > 0)
                 {
                     foreach (ModLink dependency in release.conflictsWith)
@@ -371,7 +370,32 @@ namespace BeatSaberModManager
                     }
                 }
             }
-            else
+
+            if (!e.Item.Checked)
+            {
+                List<ReleaseInfo> parents = new List<ReleaseInfo> { release };
+                List<ReleaseInfo> dependents = GetDependentReleases(parents);
+                if (dependents.Count > 0)
+                {
+                    programmaticCheck = true;
+                    string message = string.Format("The following mods depend on '{0}' or one of its dependents, and will also be unchecked. Continue?\n\n{1}", release.name, BuildReleaseNameList(dependents));
+                    if (MessageBox.Show(message, "Continue?", MessageBoxButtons.YesNo) == DialogResult.No)
+                    {
+                        e.Item.Checked = true;
+                    }
+                    else
+                    {
+                        foreach (ReleaseInfo dependent in dependents)
+                        {
+                            dependent.itemHandle.Checked = false;
+                            dependent.install = false;
+                        }
+                    }
+                    programmaticCheck = false;
+                }
+            }
+
+            if (!e.Item.Checked)
             {
                 if (release.conflictsWith.Count > 0)
                 {
@@ -388,9 +412,56 @@ namespace BeatSaberModManager
                     }
                 }
             }
-            if (finishedLoading ){
-                ReRenderListView();
+
+            release.install = e.Item.Checked;
+
+            ReRenderListView();
+        }
+
+        private List<ReleaseInfo> GetDependentReleases(List<ReleaseInfo> parents)
+        {
+            List<ReleaseInfo> dependents = new List<ReleaseInfo>();
+
+            // For each parent, check if any of the enabled releases depends on it
+            foreach (ReleaseInfo parent in parents)
+            {
+                foreach (ReleaseInfo release in remote.releases)
+                {
+                    if (release.itemHandle == null || !release.itemHandle.Checked) continue;
+
+                    foreach (ModLink dependency in release.dependsOn)
+                    {
+                        // If the dependency matches, then this release depends on our parent
+                        if (dependency.name == parent.name)
+                        {
+                            dependents.Add(release);
+                        }
+                    }
+                }
             }
+
+            if (dependents.Count > 0)
+            {
+                List<ReleaseInfo> subDependents = GetDependentReleases(dependents);
+                if (subDependents.Count > 0)
+                {
+                    dependents = dependents.Union(subDependents).ToList();
+                }
+            }
+
+            return dependents;
+        }
+
+        private string BuildReleaseNameList(List<ReleaseInfo> releases)
+        {
+            string releaseNameList = string.Empty;
+
+            foreach (ReleaseInfo release in releases)
+            {
+                releaseNameList += release.name + Environment.NewLine;
+            }
+
+            return releaseNameList;
         }
 
         private void ReRenderListView ()
