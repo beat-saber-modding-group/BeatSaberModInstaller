@@ -15,12 +15,15 @@ namespace BeatSaberModManager.Core
     {
 #if DEBUG
         private const string BeatModsURL = "https://beatmods.com";
+        private static readonly string[] MirrorURLs = { "https://beatmods.raphaeltheriault.com" };
 #else
         private const string BeatModsURL = "https://beatmods.com";
+        private static readonly string[] MirrorURLs = {  };
 #endif
 
         private const string ApiVersion = "1";
-        private readonly string ApiURL = $"{BeatModsURL}/api/v{ApiVersion}";
+        private string ModsURL = BeatModsURL;
+        private string ApiURL = $"{BeatModsURL}/api/v{ApiVersion}";
 
         public GameVersion[] gameVersions;
         public GameVersion selectedGameVersion;
@@ -78,7 +81,7 @@ namespace BeatSaberModManager.Core
 
                     for (var f = 0; f < files.Count; ++f)
                     {
-                        files[f]["url"] = BeatModsURL + files[f]["url"];
+                        files[f]["url"] = ModsURL + files[f]["url"];
                     }
 
                     if (files.Count > 1)
@@ -137,11 +140,23 @@ namespace BeatSaberModManager.Core
             return links;
         }
 
-        private string Fetch(string URL) => Helper.Get(URL);
+        private string Fetch(string URL, bool releases = false) => Helper.Get(URL, releases);
 
         private string GetBeatModsReleases()
         {
-            string raw = Fetch($"{ApiURL}/mod?status=approved");
+            string raw = Fetch($"{ApiURL}/mod?status=approved", true);
+            for (int i = 0; i < MirrorURLs.Length && raw == null; i++)
+            {
+                ModsURL = MirrorURLs[i];
+                ApiURL = $"{ModsURL}/api/v{ApiVersion}"; ;
+                raw = Fetch($"{ApiURL}/mod?status=approved", true);
+            }
+
+            if (raw == null)
+            {
+                MessageBox.Show("None of the mirrors are responding.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
+            }
             var decoded = JSON.Parse(raw);
             return decoded.ToString();
         }
