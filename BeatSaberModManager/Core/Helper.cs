@@ -12,7 +12,7 @@ namespace BeatSaberModManager.Core
     public static class Helper
     {
 
-        public static string Get(string URL) {
+        public static string Get(string URL, bool releases = false) {
 
             try {
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(URL);
@@ -27,7 +27,10 @@ namespace BeatSaberModManager.Core
             }
             catch (Exception ex) {
                 MessageBox.Show($"Error trying to access: {URL}\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
+                if (!releases)
+                {
+                    Environment.Exit(0);
+                }
                 return null;
             }
         }
