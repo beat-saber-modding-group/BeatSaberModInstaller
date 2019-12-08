@@ -1,3 +1,7 @@
+> # **This repository is deprecated!**
+> ### Please use [Mod Assistant] to install mods now, this installer is no longer supported.
+
+
 # Beat Saber Mod Manager (BeatMods Edition!)
 
 *This is a fork of the Beat Saber Mod Manager by Umbranoxio.*
