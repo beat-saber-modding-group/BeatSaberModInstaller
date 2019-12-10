@@ -1,5 +1,5 @@
 > # **This repository is deprecated!**
-> ### Please use [Mod Assistant] to install mods now, this installer is no longer supported.
+> ### Please use [Mod Assistant](https://github.com/Assistant/ModAssistant) to install mods now, this installer is no longer supported.
 
 
 # Beat Saber Mod Manager (BeatMods Edition!)
